@@ -17,12 +17,12 @@ from tqdm import tqdm
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
-from temporal_graph_transformer.models.temporal_graph_transformer import TemporalGraphTransformer
-from temporal_graph_transformer.models.temporal_encoder import create_transaction_sequence_config
-from temporal_graph_transformer.models.graph_encoder import create_graph_structure_config
-from temporal_graph_transformer.data.solana_dataset import SolanaNFTDataset
-from temporal_graph_transformer.utils.loss_functions import TemporalGraphLoss
-from temporal_graph_transformer.utils.metrics import BinaryClassificationMetrics
+from models.temporal_graph_transformer import TemporalGraphTransformer
+from models.temporal_encoder import create_transaction_sequence_config
+from models.graph_encoder import create_graph_structure_config
+from data.solana_dataset import SolanaNFTDataset
+from utils.loss_functions import TemporalGraphLoss
+from utils.metrics import BinaryClassificationMetrics
 
 
 def load_config(config_path: str) -> Dict[str, Any]:

@@ -72,6 +72,9 @@ class InfoNCE(nn.Module):
             # No positive pairs, return zero loss
             return torch.tensor(0.0, device=device, requires_grad=True)
         
+        # Add safety check for extreme similarity values
+        similarity_matrix = torch.clamp(similarity_matrix, min=-10.0, max=10.0)
+        
         # For each anchor, compute loss
         losses = []
         for i in range(batch_size):
@@ -88,15 +91,25 @@ class InfoNCE(nn.Module):
             pos_exp = torch.exp(pos_similarities)
             neg_exp = torch.exp(neg_similarities)
             
+            # Add small epsilon to prevent zero values
+            pos_exp = pos_exp + 1e-8
+            neg_exp = neg_exp + 1e-8
+            
             # Numerator: sum of positive similarities
             numerator = pos_exp.sum()
             
-            # Denominator: positive + negative similarities
+            # Denominator: positive + negative similarities  
             denominator = pos_exp.sum() + neg_exp.sum()
             
+            # Clamp ratio to prevent extreme values
+            ratio = torch.clamp(numerator / denominator, min=1e-8, max=1.0 - 1e-8)
+            
             # Loss for this anchor
-            anchor_loss = -torch.log(numerator / (denominator + 1e-8))
-            losses.append(anchor_loss)
+            anchor_loss = -torch.log(ratio)
+            
+            # Check for NaN and skip if necessary
+            if not torch.isnan(anchor_loss) and torch.isfinite(anchor_loss):
+                losses.append(anchor_loss)
         
         if len(losses) == 0:
             return torch.tensor(0.0, device=device, requires_grad=True)
@@ -144,11 +157,15 @@ class TemporalConsistencyLoss(nn.Module):
         time_diffs = torch.diff(timestamps, dim=1)  # (batch_size, seq_len-1)
         
         # Normalize by time differences to account for irregular sampling
-        time_diffs = torch.clamp(time_diffs.abs(), min=1.0, max=86400.0)  # Clamp to reasonable range (1 sec to 1 day)
-        normalized_diffs = temporal_diffs / time_diffs.unsqueeze(-1)
+        # Clamp to reasonable range and add small epsilon to prevent division by zero
+        time_diffs_safe = torch.clamp(time_diffs.abs(), min=60.0, max=86400.0) + 1e-6  # Min 1 minute, max 1 day
+        normalized_diffs = temporal_diffs / time_diffs_safe.unsqueeze(-1)
         
-        # Compute smoothness loss (L2 norm of temporal gradients)
-        smoothness_loss = torch.norm(normalized_diffs, dim=-1).mean() * 0.1  # Scale down to prevent explosion
+        # Compute smoothness loss (L2 norm of temporal gradients) with additional safeguards
+        norms = torch.norm(normalized_diffs, dim=-1)  # (batch_size, seq_len-1)
+        # Clamp norms to prevent explosion and apply strong scaling
+        norms_clamped = torch.clamp(norms, max=10.0)  # Prevent extreme values
+        smoothness_loss = norms_clamped.mean() * 0.01  # Strong scaling to prevent explosion
         
         # If airdrop events are provided, allow larger changes near those events
         if airdrop_events is not None:
@@ -157,19 +174,23 @@ class TemporalConsistencyLoss(nn.Module):
             )
             
             # Reduce penalty for changes near airdrop events
-            change_penalties = torch.norm(normalized_diffs, dim=-1)
+            change_penalties = torch.norm(normalized_diffs, dim=-1)  # (batch_size, seq_len-1)
+            # Clamp penalties to prevent explosion
+            change_penalties = torch.clamp(change_penalties, max=10.0)
             change_penalties = change_penalties * (~airdrop_tolerance_mask).float()
-            smoothness_loss = change_penalties.mean()
+            smoothness_loss = change_penalties.mean() * 0.01  # Apply same scaling
         
         # Weight loss differently for hunters vs legitimate users
-        if labels is not None:
+        if labels is not None and airdrop_events is None:
+            # Only apply class weighting if we haven't already computed with airdrop tolerance
             # Legitimate users (label=0) should have higher consistency
             # Hunters (label=1) are allowed more variability
             class_weights = torch.where(labels == 0, 1.5, 0.5)  # Higher weight for legitimate users
             
-            # Expand weights to sequence dimension
-            expanded_weights = class_weights.unsqueeze(1).expand(-1, seq_len-1)
-            smoothness_loss = (smoothness_loss * expanded_weights).mean()
+            # Apply per-sample weighting to the norms, then recompute mean
+            per_sample_norms = norms_clamped.mean(dim=1)  # (batch_size,)
+            weighted_norms = per_sample_norms * class_weights
+            smoothness_loss = weighted_norms.mean() * 0.01
         
         return self.smoothness_weight * smoothness_loss
     
@@ -220,30 +241,44 @@ class BehavioralChangeLoss(nn.Module):
         Returns:
             change_loss: Behavioral change loss value
         """
+        # Add safety checks for edge cases
+        if change_scores.numel() == 0 or labels.numel() == 0:
+            return torch.tensor(0.0, device=change_scores.device, requires_grad=True)
+        
+        # Clamp change scores to prevent extreme values
+        change_scores_safe = torch.clamp(change_scores, min=-10.0, max=10.0)
+        
         # Hunters should have high change scores, legitimate users should have low scores
         target_scores = labels.float()  # 0 for legitimate, 1 for hunters
         
         # Margin-based loss: encourage separation between classes
-        hunter_scores = change_scores[labels == 1]
-        legit_scores = change_scores[labels == 0]
+        hunter_scores = change_scores_safe[labels == 1]
+        legit_scores = change_scores_safe[labels == 0]
         
         if len(hunter_scores) == 0 or len(legit_scores) == 0:
             # If we don't have both classes, use MSE loss instead
-            target_scores = labels.float()  # 0 for legitimate, 1 for hunters
-            loss = F.mse_loss(change_scores, target_scores)
+            loss = F.mse_loss(change_scores_safe, target_scores)
         else:
-            # Use all pairs for ranking loss
-            num_pairs = min(len(hunter_scores), len(legit_scores))
-            hunter_subset = hunter_scores[:num_pairs]
-            legit_subset = legit_scores[:num_pairs]
+            # Use subset for ranking loss to ensure equal sizes
+            num_pairs = min(len(hunter_scores), len(legit_scores), 32)  # Limit to prevent memory issues
             
-            loss = F.margin_ranking_loss(
-                hunter_subset,  # Hunter scores (should be high)
-                legit_subset,   # Legitimate scores (should be low)
-                torch.ones(num_pairs, device=change_scores.device),
-                margin=self.margin,
-                reduction='mean'
-            )
+            if num_pairs == 0:
+                loss = F.mse_loss(change_scores_safe, target_scores)
+            else:
+                hunter_subset = hunter_scores[:num_pairs]
+                legit_subset = legit_scores[:num_pairs]
+                
+                # Add small epsilon to prevent exact equality
+                hunter_subset = hunter_subset + torch.randn_like(hunter_subset) * 1e-6
+                legit_subset = legit_subset + torch.randn_like(legit_subset) * 1e-6
+                
+                loss = F.margin_ranking_loss(
+                    hunter_subset,  # Hunter scores (should be high)
+                    legit_subset,   # Legitimate scores (should be low)
+                    torch.ones(num_pairs, device=change_scores.device),
+                    margin=self.margin,
+                    reduction='mean'
+                )
         
         # Weight by confidence if available
         if confidence is not None:

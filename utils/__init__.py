@@ -5,6 +5,7 @@ Utility modules for Temporal Graph Transformer
 from .time_encoding import FunctionalTimeEncoding, SinusoidalTimeEncoding
 from .attention import CrossAttention, GlobalAttentionPooling
 from .loss_functions import TemporalGraphLoss, InfoNCE, TemporalConsistencyLoss
+from .metrics import BinaryClassificationMetrics, MultiClassMetrics, CrossValidationMetrics
 
 __all__ = [
     "FunctionalTimeEncoding",
@@ -13,5 +14,8 @@ __all__ = [
     "GlobalAttentionPooling",
     "TemporalGraphLoss",
     "InfoNCE",
-    "TemporalConsistencyLoss"
+    "TemporalConsistencyLoss",
+    "BinaryClassificationMetrics",
+    "MultiClassMetrics", 
+    "CrossValidationMetrics"
 ]

@@ -14,7 +14,11 @@ import math
 import networkx as nx
 import numpy as np
 
-from ..utils.attention import GraphStructureAttention, CrossAttention
+# Try relative import first, fall back to absolute import
+try:
+    from ..utils.attention import GraphStructureAttention, CrossAttention
+except ImportError:
+    from utils.attention import GraphStructureAttention, CrossAttention
 
 
 class MultiModalEdgeEncoder(nn.Module):
@@ -317,7 +321,10 @@ class GraphStructureTransformer(nn.Module):
         ])
         
         # Global attention pooling
-        from ..utils.attention import GlobalAttentionPooling
+        try:
+            from ..utils.attention import GlobalAttentionPooling
+        except ImportError:
+            from utils.attention import GlobalAttentionPooling
         self.global_pooling = GlobalAttentionPooling(
             d_model=d_model,
             num_heads=config.get('global_heads', 4)

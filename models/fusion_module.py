@@ -14,7 +14,11 @@ import torch.nn.functional as F
 from typing import Dict, Optional, Tuple, List
 import math
 
-from ..utils.attention import CrossAttention, GlobalAttentionPooling, AdaptiveAttention
+# Try relative import first, fall back to absolute import
+try:
+    from ..utils.attention import CrossAttention, GlobalAttentionPooling, AdaptiveAttention
+except ImportError:
+    from utils.attention import CrossAttention, GlobalAttentionPooling, AdaptiveAttention
 
 
 class BehaviorChangeScorer(nn.Module):

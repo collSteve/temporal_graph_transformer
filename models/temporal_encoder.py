@@ -12,11 +12,19 @@ import torch.nn.functional as F
 from typing import Optional, Tuple, Dict, List
 import math
 
-from ..utils.time_encoding import (
-    FunctionalTimeEncoding, 
-    BehaviorChangeTimeEncoding,
-    create_time_mask
-)
+# Try relative import first, fall back to absolute import
+try:
+    from ..utils.time_encoding import (
+        FunctionalTimeEncoding, 
+        BehaviorChangeTimeEncoding,
+        create_time_mask
+    )
+except ImportError:
+    from utils.time_encoding import (
+        FunctionalTimeEncoding, 
+        BehaviorChangeTimeEncoding,
+        create_time_mask
+    )
 
 
 class TransactionFeatureEmbedding(nn.Module):
