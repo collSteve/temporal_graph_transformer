@@ -1,0 +1,317 @@
+# Phase 4 Experimental Validation Configuration
+# Comprehensive configuration for all Phase 4 evaluation components
+
+# =============================================================================
+# EVALUATION SETTINGS
+# =============================================================================
+evaluation:
+  # Random seeds for statistical significance (5 runs recommended for final results)
+  random_seeds: [42, 123, 456, 789, 999]
+  
+  # Cross-validation parameters
+  cv_folds: 5
+  test_size: 0.2
+  
+  # Parallel processing
+  parallel_jobs: 4
+  
+  # Statistical significance level
+  significance_level: 0.05
+
+# =============================================================================
+# DATASET CONFIGURATION
+# =============================================================================
+datasets:
+  # All blockchain types to evaluate
+  blockchain_types:
+    - arbitrum      # Primary pure crypto target
+    - jupiter       # Secondary pure crypto target  
+    - optimism      # Longitudinal analysis target
+    - blur          # NFT market comparison
+    - solana        # Additional NFT/Solana coverage
+  
+  # Dataset categorization for analysis
+  pure_crypto:
+    - arbitrum
+    - jupiter
+    - optimism
+  
+  nft_markets:
+    - blur
+    - solana
+  
+  # Dataset-specific parameters
+  data_params:
+    max_sequence_length: 50
+    min_transactions: 10
+    train_ratio: 0.7
+    val_ratio: 0.15
+    test_ratio: 0.15
+
+# =============================================================================
+# METHOD CONFIGURATION
+# =============================================================================
+methods:
+  # All baseline methods to evaluate
+  all_baselines:
+    - TemporalGraphTransformer    # Our main model
+    - TrustaLabFramework          # Industry standard
+    - SubgraphFeaturePropagation  # Academic SOTA
+    - GAT                         # Graph Attention Networks
+    - GraphSAGE                   # GraphSAGE
+    - SybilGAT                    # Sybil-specific GAT
+    - BasicGCN                    # Graph Convolutional Networks
+    - LightGBM                    # Gradient boosting
+    - RandomForest                # Random forest
+  
+  # Primary methods for detailed comparison
+  primary_comparison:
+    - TemporalGraphTransformer
+    - TrustaLabFramework
+    - SubgraphFeaturePropagation
+  
+  # Method-specific configurations
+  temporal_graph_transformer:
+    d_model: 128
+    temporal_layers: 3
+    temporal_heads: 8
+    graph_layers: 3
+    graph_heads: 8
+    dropout: 0.1
+    epochs: 50
+    lr: 1e-3
+    patience: 10
+    batch_size: 32
+  
+  trustalab_framework:
+    star_threshold_degree: 10
+    tree_max_depth: 5
+    chain_min_length: 3
+    similarity_threshold: 0.8
+    n_estimators: 100
+    random_state: 42
+  
+  subgraph_propagation:
+    max_neighbors_l1: 10
+    max_neighbors_l2: 20
+    input_dim: 128
+    hidden_dim: 256
+    num_layers: 2
+    heads: 4
+    dropout: 0.1
+    epochs: 50
+    lr: 1e-3
+    patience: 10
+  
+  enhanced_gnns:
+    input_dim: 128
+    hidden_dim: 256
+    num_layers: 2
+    heads: 4
+    dropout: 0.1
+    epochs: 50
+    lr: 1e-3
+    patience: 10
+  
+  traditional_ml:
+    # LightGBM parameters
+    num_leaves: 31
+    learning_rate: 0.1
+    num_boost_round: 1000
+    early_stopping_rounds: 100
+    
+    # RandomForest parameters
+    n_estimators: 100
+    max_depth: 10
+    min_samples_split: 5
+    min_samples_leaf: 2
+    
+    # Common parameters
+    random_state: 42
+
+# =============================================================================
+# EXPERIMENT CONFIGURATION
+# =============================================================================
+experiments:
+  # Enable/disable specific experiment types
+  comprehensive_evaluation: true      # All methods × all datasets
+  cross_chain_generalization: true    # Train on one chain, test on another
+  temporal_analysis: true             # Before/during/after airdrop patterns
+  failure_case_analysis: true         # Systematic failure categorization
+  ablation_studies: true              # TGT component contribution analysis
+  interpretability_analysis: true     # Attention patterns and feature importance
+  
+  # Experiment-specific parameters
+  cross_chain:
+    # Test all pairwise combinations
+    test_all_combinations: true
+    # Specific combinations to test (if test_all_combinations is false)
+    specific_combinations:
+      - [arbitrum, jupiter]
+      - [jupiter, arbitrum]
+      - [arbitrum, optimism]
+  
+  temporal_analysis:
+    # Airdrop dates for temporal analysis
+    airdrop_dates:
+      arbitrum: "2023-03-23"   # ARB token airdrop
+      optimism: "2022-05-31"   # OP token airdrop  
+      jupiter: "2024-01-31"    # JUP token airdrop
+      blur: "2023-02-14"       # BLUR token airdrop
+    
+    # Temporal periods to analyze
+    periods:
+      pre_farming_days: 180      # 6 months before airdrop
+      intensive_farming_days: 60  # 2 months before airdrop  
+      pre_announcement_days: 7    # 1 week before airdrop
+      post_airdrop_days: 30      # 1 month after airdrop
+  
+  failure_analysis:
+    confidence_threshold: 0.7     # Threshold for low confidence classification
+    disagreement_threshold: 0.3   # Threshold for high method disagreement
+    min_samples_for_analysis: 10  # Minimum samples needed for pattern analysis
+  
+  ablation_studies:
+    # Ablation configurations to test
+    ablation_types:
+      - no_temporal_layers
+      - no_graph_layers
+      - single_temporal_layer
+      - single_graph_layer
+      - half_model_size
+      - double_model_size
+      - single_head_attention
+      - higher_dropout
+      - no_dropout
+    
+    # Number of runs per ablation configuration
+    ablation_runs: 3
+  
+  interpretability:
+    # Analysis types to perform
+    attention_visualization: true
+    feature_importance: true
+    pattern_clustering: true
+    decision_boundary_analysis: true
+    representational_similarity: true
+    
+    # Visualization parameters
+    max_attention_samples: 100
+    clustering_methods: [kmeans, hierarchical]
+
+# =============================================================================
+# OUTPUT CONFIGURATION
+# =============================================================================
+output:
+  # Base output directory
+  base_dir: "./phase4_results"
+  
+  # What to save
+  save_models: true              # Save trained model checkpoints
+  save_predictions: true         # Save all predictions for analysis
+  save_attention_weights: true   # Save attention weights (for TGT)
+  save_intermediate_results: true # Save intermediate results during long runs
+  
+  # Visualization generation
+  generate_visualizations: true
+  visualization_formats: [png, html, svg]
+  
+  # Report generation
+  generate_reports: true
+  report_formats: [markdown, html, pdf]
+  
+  # Compression for large files
+  compress_large_files: true
+  compression_threshold_mb: 100
+
+# =============================================================================
+# RESOURCE CONFIGURATION
+# =============================================================================
+resources:
+  # Device configuration
+  device: auto  # auto, cpu, cuda, cuda:0, etc.
+  
+  # Memory management
+  max_memory_gb: 16
+  clear_memory_between_experiments: true
+  
+  # Parallel processing
+  max_parallel_processes: 4
+  use_multiprocessing: true
+  
+  # Timeout settings
+  max_experiment_hours: 6
+  method_timeout_minutes: 30
+  
+  # Early stopping for long experiments
+  enable_early_stopping: true
+  early_stopping_patience_hours: 1
+
+# =============================================================================
+# LOGGING CONFIGURATION
+# =============================================================================
+logging:
+  # Logging level
+  level: INFO  # DEBUG, INFO, WARNING, ERROR
+  
+  # Log file configuration
+  log_to_file: true
+  log_file: "phase4_evaluation.log"
+  
+  # Progress tracking
+  show_progress_bars: true
+  log_intermediate_results: true
+  
+  # Experiment tracking
+  track_resource_usage: true
+  log_timing_info: true
+
+# =============================================================================
+# QUICK EVALUATION SETTINGS
+# =============================================================================
+quick_evaluation:
+  # Reduced settings for quick testing
+  random_seeds: [42, 123]
+  methods:
+    - TemporalGraphTransformer
+    - TrustaLabFramework
+    - LightGBM
+  datasets:
+    - arbitrum
+    - jupiter
+  experiments:
+    comprehensive_evaluation: true
+    cross_chain_generalization: true
+    temporal_analysis: false
+    failure_case_analysis: false
+    ablation_studies: true  # Quick ablation only
+    interpretability_analysis: false
+  
+  # Reduced training parameters
+  epochs: 10
+  patience: 3
+  ablation_runs: 2
+
+# =============================================================================
+# ADVANCED SETTINGS
+# =============================================================================
+advanced:
+  # Reproducibility
+  set_random_seeds: true
+  deterministic_algorithms: true
+  
+  # Numerical stability
+  numerical_precision: float32
+  gradient_clipping: 1.0
+  
+  # Experimental features
+  enable_experimental_features: false
+  experimental_methods: []
+  
+  # Custom analysis hooks
+  custom_analysis_functions: []
+  
+  # Integration with external tools
+  wandb_integration: false
+  tensorboard_integration: false
+  mlflow_integration: false
