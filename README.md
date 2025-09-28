@@ -1,6 +1,6 @@
 # Temporal Graph Transformer for Airdrop Hunter Detection
 
-A novel hierarchical architecture that combines temporal sequence modeling with graph neural networks to detect airdrop hunting behavior in blockchain ecosystems.
+A hierarchical architecture that combines temporal sequence modeling with graph neural networks to detect airdrop hunting behavior in blockchain ecosystems.
 
 ## 🏗️ Architecture
 
@@ -197,9 +197,9 @@ If you use this work in your research, please cite:
 ```bibtex
 @article{temporal_graph_transformer_2024,
   title={Temporal Graph Transformer for Airdrop Hunter Detection in Blockchain Ecosystems},
-  author={[Authors]},
-  journal={[Venue]},
-  year={2024}
+  author={[Ke (Steve) Ren]},
+  journal={[]},
+  year={2025}
 }
 ```
 
